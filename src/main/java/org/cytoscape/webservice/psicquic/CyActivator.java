@@ -31,7 +31,6 @@ import static org.cytoscape.work.ServiceProperties.TITLE;
 
 import java.util.Properties;
 
-import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.event.CyEventHelper;
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
@@ -52,16 +51,12 @@ import org.osgi.framework.BundleContext;
 
 public class CyActivator extends AbstractCyActivator {
 	
-	private static final String CLIENT_DISCRIPTION = "<strong>Universal Interaction Database Client</strong>" +
+	private static final String CLIENT_DISCRIPTION = 
 			"<p>This is a web service client for <a href=\"http://code.google.com/p/psicquic/\">PSICQUIC</a>-compliant databases.</p>" +
 			"<ul><li><a href=\"http://code.google.com/p/psicquic/wiki/MiqlReference\">Query language (MIQL) Syntax</a></li>" +
 			"<li><a href=\"http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/registry?action=STATUS\">List of Supported Databases</a></li></ul>";
 	
 	
-	public CyActivator() {
-		super();
-	}
-
 	@Override
 	public void start(BundleContext bc) {
 		final CyProperty<Properties> cyPropertyServiceRef = getService(bc,CyProperty.class,"(cyPropertyName=cytoscape3.props)");
@@ -93,7 +88,8 @@ public class CyActivator extends AbstractCyActivator {
 		final CyNetworkBuilder builder = new CyNetworkBuilder(cyNetworkFactoryServiceRef);
 
 		final PSICQUICWebServiceClient psicquicClient = new PSICQUICWebServiceClient(
-				"http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/registry", "Interaction Database Universal Client",
+				"http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/registry",
+				"Universal Interaction Database Client",
 				CLIENT_DISCRIPTION, cyNetworkFactoryServiceRef, cyNetworkManagerServiceRef,
 				tm, createViewTaskFactoryServiceRef, builder, vsBuilder, vmm, tagManager, cyPropertyServiceRef, registrar);
 

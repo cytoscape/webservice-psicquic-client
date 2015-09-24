@@ -28,7 +28,6 @@ import java.awt.Container;
 import java.util.Map;
 import java.util.Properties;
 
-import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.io.webservice.NetworkImportWebServiceClient;
 import org.cytoscape.io.webservice.SearchWebServiceClient;
 import org.cytoscape.io.webservice.swing.AbstractWebServiceGUIClient;
@@ -52,6 +51,7 @@ import org.slf4j.LoggerFactory;
 public class PSICQUICWebServiceClient extends AbstractWebServiceGUIClient implements NetworkImportWebServiceClient,
 		SearchWebServiceClient {
 
+	@SuppressWarnings("unused")
 	private static final Logger logger = LoggerFactory.getLogger(PSICQUICWebServiceClient.class);
 
 	private PSICQUICRestClient client;
