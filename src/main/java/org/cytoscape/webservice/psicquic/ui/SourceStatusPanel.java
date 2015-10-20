@@ -26,6 +26,7 @@ package org.cytoscape.webservice.psicquic.ui;
 
 import static javax.swing.GroupLayout.DEFAULT_SIZE;
 import static javax.swing.GroupLayout.PREFERRED_SIZE;
+import static org.cytoscape.util.swing.LookAndFeelUtil.isAquaLAF;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -335,12 +336,14 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		buttonPanel = new JPanel();
 		
 		selectAllButton = new JButton("Select All");
-		selectAllButton.putClientProperty("JButton.buttonType", "gradient"); // Mac OS X only
-		selectAllButton.putClientProperty("JComponent.sizeVariant", "small"); // Mac OS X only
-		
 		selectNoneButton = new JButton("Select None");
-		selectNoneButton.putClientProperty("JButton.buttonType", "gradient"); // Mac OS X only
-		selectNoneButton.putClientProperty("JComponent.sizeVariant", "small"); // Mac OS X only
+		
+		if (isAquaLAF()) {
+			selectAllButton.putClientProperty("JButton.buttonType", "gradient");
+			selectAllButton.putClientProperty("JComponent.sizeVariant", "small");
+			selectNoneButton.putClientProperty("JButton.buttonType", "gradient");
+			selectNoneButton.putClientProperty("JComponent.sizeVariant", "small");
+		}
 		
 		LookAndFeelUtil.equalizeSize(selectAllButton, selectNoneButton);
 		
@@ -489,6 +492,9 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 				final JComponent jc = (JComponent) c;
 				jc.setEnabled(true);
 				
+				jc.setForeground(UIManager.getColor(isSelected ? "Table.selectionForeground" : "Table.foreground"));
+				jc.setBackground(UIManager.getColor(isSelected ? "Table.selectionBackground" : "Table.background"));
+				
 				final String serviceName = (String) table.getValueAt(row, DB_NAME_COLUMN_INDEX);
 				
 				int count = 0;
@@ -514,10 +520,16 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		@Override
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
 				boolean hasFocus, int row, int column) {
+			super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+			
+			this.setForeground(UIManager.getColor(isSelected ? "Table.selectionForeground" : "Table.foreground"));
+			this.setBackground(UIManager.getColor(isSelected ? "Table.selectionBackground" : "Table.background"));
+			
 			if (value == null) {
 				this.setEnabled(false);
 				return this;
 			}
+			
 			this.setText(value.toString());
 			
 			final String serviceName = (String) table.getValueAt(row, DB_NAME_COLUMN_INDEX);
@@ -531,18 +543,14 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 			}
 			
 			if (!manager.isActive(serviceName) || statusString.equals(ACTIVE) == false || count == 0) {
-				this.setForeground(UIManager.getColor("Label.disabledForeground"));
+				if (!isSelected)
+					this.setForeground(UIManager.getColor("Label.disabledForeground"));
+				
 				this.setEnabled(false);
 			} else {
-				this.setForeground(table.getForeground());
 				this.setEnabled(true);
 			}
 			
-			if (isSelected)
-				this.setBackground(table.getSelectionBackground());
-			else
-				this.setBackground(table.getBackground());
-
 			if (column == STATUS_COLUMN_INDEX || column == TAG_COLUMN_INDEX) {
 				this.setHorizontalAlignment(SwingConstants.LEFT);
 			} else {
@@ -561,42 +569,36 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		@Override
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
 				boolean hasFocus, int row, int column) {
+			super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+			
+			this.setForeground(UIManager.getColor(isSelected ? "Table.selectionForeground" : "Table.foreground"));
+			this.setBackground(UIManager.getColor(isSelected ? "Table.selectionBackground" : "Table.background"));
+			
 			if (value == null || value instanceof Number == false) {
 				this.setEnabled(false);
-				return this;
+			} else {
+				Integer count;
+				
+				try {
+					count = Integer.valueOf(value.toString());
+				} catch (Exception e) {
+					count = 0;
+				}
+	
+				final String serviceName = (String) table.getValueAt(row, DB_NAME_COLUMN_INDEX);
+				final String statusString = (String) table.getValueAt(row, STATUS_COLUMN_INDEX);
+	
+				this.setText(count.toString());
+				this.setEnabled(
+						table.isEnabled() && 
+						count > 0 && 
+						manager.isActive(serviceName) && 
+						statusString.equals(ACTIVE)
+				);
 			}
 			
-			this.setEnabled(true);
-
-			Integer count;
-			try {
-				count = Integer.valueOf(value.toString());
-			} catch (Exception e) {
-				count = 0;
-			}
-
-			final String serviceName = (String) table.getValueAt(row, DB_NAME_COLUMN_INDEX);
-			final String statusString = (String) table.getValueAt(row, STATUS_COLUMN_INDEX);
-
-			this.setText(count.toString());
-
-			if (!manager.isActive(serviceName) || statusString.equals(ACTIVE) == false) {
+			if (!this.isEnabled() && !isSelected)
 				this.setForeground(UIManager.getColor("Label.disabledForeground"));
-				this.setEnabled(false);
-			} else if (count == 0) {
-				this.setForeground(UIManager.getColor("Label.disabledForeground"));
-				this.setEnabled(false);
-			} else {
-				this.setForeground(table.getForeground());
-			}
-
-			if (isSelected)
-				this.setBackground(table.getSelectionBackground());
-			else
-				this.setBackground(table.getBackground());
-
-			if (!table.isEnabled())
-				this.setEnabled(false);
 			
 			return this;
 		}
