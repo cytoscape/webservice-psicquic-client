@@ -19,7 +19,7 @@
 	<groupId>org.cytoscape</groupId>
 	<artifactId>webservice-psicquic-client</artifactId>
 	<version>3.3.0-SNAPSHOT</version>
-	<name>Cytoscape PSIQUIC Web Service Client (${project.artifactId})</name>
+	<name>PSICQUIC Web Service Client</name>
 	<packaging>bundle</packaging>
 
 	<scm>
