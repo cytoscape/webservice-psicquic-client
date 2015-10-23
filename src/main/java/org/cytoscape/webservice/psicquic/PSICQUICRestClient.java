@@ -248,12 +248,11 @@ public final class PSICQUICRestClient {
 
 				final StringBuilder builder = new StringBuilder();
 				for(final String name: nameSet) {
-					builder.append("<li>" + name + "</li>");
+					builder.append(name + " ");
 				}
 				
-				tm.setStatusMessage("<html><body style=\"line-height:150%\">" + 
-						(i + 1) + " / " + targetServices.size() + " tasks finished.<br><br>"
-						+ "Waiting results from the following databases:<br><ul>" + builder.toString() + "</ul></body></html>");
+				tm.setStatusMessage(" - " + (i + 1) + " / " + targetServices.size() + " tasks finished.  "
+						+ "Waiting results from the following databases: " + builder.toString());
 
 			} catch (InterruptedException ie) {
 				for (final ImportNetworkTask t : taskSet)
