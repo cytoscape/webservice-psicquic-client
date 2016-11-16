@@ -18,7 +18,7 @@
 
 	<groupId>org.cytoscape</groupId>
 	<artifactId>webservice-psicquic-client</artifactId>
-	<version>3.3.1-SNAPSHOT</version>
+	<version>3.3.1</version>
 	<name>PSICQUIC Web Service Client</name>
 	<packaging>bundle</packaging>
 
