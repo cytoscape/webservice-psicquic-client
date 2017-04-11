@@ -1,12 +1,31 @@
 package org.cytoscape.webservice.psicquic;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Paint;
+import java.util.Set;
+
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.view.presentation.property.BasicVisualLexicon;
+import org.cytoscape.view.presentation.property.LineTypeVisualProperty;
+import org.cytoscape.view.presentation.property.NodeShapeVisualProperty;
+import org.cytoscape.view.presentation.property.values.LineType;
+import org.cytoscape.view.presentation.property.values.NodeShape;
+import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
+import org.cytoscape.view.vizmap.VisualPropertyDependency;
+import org.cytoscape.view.vizmap.VisualStyle;
+import org.cytoscape.view.vizmap.VisualStyleFactory;
+import org.cytoscape.view.vizmap.mappings.DiscreteMapping;
+import org.cytoscape.view.vizmap.mappings.PassthroughMapping;
+import org.cytoscape.webservice.psicquic.mapper.InteractionClusterMapper;
+
 /*
  * #%L
  * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -23,24 +42,6 @@ package org.cytoscape.webservice.psicquic;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Paint;
-import java.util.Set;
-
-import org.cytoscape.view.presentation.property.BasicVisualLexicon;
-import org.cytoscape.view.presentation.property.LineTypeVisualProperty;
-import org.cytoscape.view.presentation.property.NodeShapeVisualProperty;
-import org.cytoscape.view.presentation.property.values.LineType;
-import org.cytoscape.view.presentation.property.values.NodeShape;
-import org.cytoscape.view.vizmap.VisualMappingFunctionFactory;
-import org.cytoscape.view.vizmap.VisualPropertyDependency;
-import org.cytoscape.view.vizmap.VisualStyle;
-import org.cytoscape.view.vizmap.VisualStyleFactory;
-import org.cytoscape.view.vizmap.mappings.DiscreteMapping;
-import org.cytoscape.view.vizmap.mappings.PassthroughMapping;
-import org.cytoscape.webservice.psicquic.mapper.InteractionClusterMapper;
 
 public class PSIMI25VisualStyleBuilder {
 
@@ -75,25 +76,24 @@ public class PSIMI25VisualStyleBuilder {
 	private static final Color COLOR_DNA = Color.DARK_GRAY;
 	private static final Color COLOR_MOLECULE = Color.DARK_GRAY;
 
-	private final VisualStyleFactory vsFactory;
+	private final CyServiceRegistrar serviceRegistrar;
 
-	private final VisualMappingFunctionFactory discreteMappingFactory;
-	private final VisualMappingFunctionFactory passthroughMappingFactory;
-
-	public PSIMI25VisualStyleBuilder(final VisualStyleFactory vsFactory,
-			final VisualMappingFunctionFactory discreteMappingFactory,
-			final VisualMappingFunctionFactory passthroughMappingFactory) {
-		this.vsFactory = vsFactory;
-		this.discreteMappingFactory = discreteMappingFactory;
-		this.passthroughMappingFactory = passthroughMappingFactory;
+	public PSIMI25VisualStyleBuilder(CyServiceRegistrar serviceRegistrar) {
+		this.serviceRegistrar = serviceRegistrar;
 	}
 
 	public VisualStyle getVisualStyle() {
-
+		VisualStyleFactory vsFactory = serviceRegistrar.getService(VisualStyleFactory.class);
+		VisualMappingFunctionFactory pmFactory = serviceRegistrar.getService(VisualMappingFunctionFactory.class,
+				"(mapping.type=passthrough)");
+		VisualMappingFunctionFactory dmFactory = serviceRegistrar.getService(VisualMappingFunctionFactory.class,
+				"(mapping.type=discrete)");
+		
 		final VisualStyle defStyle = vsFactory.createVisualStyle(DEF_VS_NAME);
 		final Set<VisualPropertyDependency<?>> deps = defStyle.getAllVisualPropertyDependencies();
+		
 		// Disable add deps
-		for(VisualPropertyDependency<?> dep: deps) {
+		for (VisualPropertyDependency<?> dep: deps) {
 			dep.setDependency(false);
 		}
 
@@ -102,22 +102,22 @@ public class PSIMI25VisualStyleBuilder {
 		defStyle.setDefaultValue(BasicVisualLexicon.NETWORK_BACKGROUND_PAINT, backGroundColor);
 
 		// Label Mappings
-		final PassthroughMapping<String, String> labelPassthrough = (PassthroughMapping<String, String>) passthroughMappingFactory
+		final PassthroughMapping<String, String> labelPassthrough = (PassthroughMapping<String, String>) pmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.PREDICTED_GENE_NAME, String.class,
 						BasicVisualLexicon.NODE_LABEL);
 		defStyle.addVisualMappingFunction(labelPassthrough);
 
-		final PassthroughMapping<String, String> edgeLabelPassthrough = (PassthroughMapping<String, String>) passthroughMappingFactory
+		final PassthroughMapping<String, String> edgeLabelPassthrough = (PassthroughMapping<String, String>) pmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.DETECTION_METHOD_NAME, String.class,
 						BasicVisualLexicon.EDGE_LABEL);
 		defStyle.addVisualMappingFunction(edgeLabelPassthrough);
 		
-		final PassthroughMapping<String, String> nodeTooltipPassthrough = (PassthroughMapping<String, String>) passthroughMappingFactory
+		final PassthroughMapping<String, String> nodeTooltipPassthrough = (PassthroughMapping<String, String>) pmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.INTERACTOR_TYPE, String.class,
 						BasicVisualLexicon.NODE_TOOLTIP);
 		defStyle.addVisualMappingFunction(nodeTooltipPassthrough);
 
-		final PassthroughMapping<String, String> edgeTooltipPassthrough = (PassthroughMapping<String, String>) passthroughMappingFactory
+		final PassthroughMapping<String, String> edgeTooltipPassthrough = (PassthroughMapping<String, String>) pmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.PRIMARY_INTERACTION_TYPE, String.class,
 						BasicVisualLexicon.EDGE_TOOLTIP);
 		defStyle.addVisualMappingFunction(edgeTooltipPassthrough);
@@ -145,7 +145,7 @@ public class PSIMI25VisualStyleBuilder {
 		defStyle.setDefaultValue(BasicVisualLexicon.EDGE_LABEL_COLOR, EDGE_LABEL_COLOR);
 
 		// Node Color Mapping based on species name
-		final DiscreteMapping<String, Paint> nodeColorMapping = (DiscreteMapping<String, Paint>) discreteMappingFactory
+		final DiscreteMapping<String, Paint> nodeColorMapping = (DiscreteMapping<String, Paint>) dmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.TAXNOMY, String.class, BasicVisualLexicon.NODE_FILL_COLOR);
 
 		nodeColorMapping.putMapValue("9606", COLOR_HUMAN);
@@ -160,7 +160,7 @@ public class PSIMI25VisualStyleBuilder {
 		defStyle.addVisualMappingFunction(nodeColorMapping);
 
 		// Size Mapping
-		final DiscreteMapping<String, Double> nodeWidthMapping = (DiscreteMapping<String, Double>) discreteMappingFactory
+		final DiscreteMapping<String, Double> nodeWidthMapping = (DiscreteMapping<String, Double>) dmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.INTERACTOR_TYPE, String.class, BasicVisualLexicon.NODE_WIDTH);
 		nodeWidthMapping .putMapValue("protein", 65d);
 
@@ -182,7 +182,7 @@ public class PSIMI25VisualStyleBuilder {
 		
 		defStyle.addVisualMappingFunction(nodeWidthMapping);
 		
-		final DiscreteMapping<String, Double> nodeHeightMapping = (DiscreteMapping<String, Double>) discreteMappingFactory
+		final DiscreteMapping<String, Double> nodeHeightMapping = (DiscreteMapping<String, Double>) dmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.INTERACTOR_TYPE, String.class, BasicVisualLexicon.NODE_HEIGHT);
 		nodeHeightMapping .putMapValue("protein", 24d);
 
@@ -205,7 +205,7 @@ public class PSIMI25VisualStyleBuilder {
 		defStyle.addVisualMappingFunction(nodeHeightMapping);
 
 		
-		final DiscreteMapping<String, NodeShape> nodeShapeMapping = (DiscreteMapping<String, NodeShape>) discreteMappingFactory
+		final DiscreteMapping<String, NodeShape> nodeShapeMapping = (DiscreteMapping<String, NodeShape>) dmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.INTERACTOR_TYPE, String.class, BasicVisualLexicon.NODE_SHAPE);
 		nodeShapeMapping.putMapValue("protein", NodeShapeVisualProperty.ROUND_RECTANGLE);
 
@@ -227,26 +227,26 @@ public class PSIMI25VisualStyleBuilder {
 		
 		defStyle.addVisualMappingFunction(nodeShapeMapping);
 
-		final DiscreteMapping<String, Paint> nodeBorderColorMapping = (DiscreteMapping<String, Paint>) discreteMappingFactory
+		final DiscreteMapping<String, Paint> nodeBorderColorMapping = (DiscreteMapping<String, Paint>) dmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.INTERACTOR_TYPE, String.class, BasicVisualLexicon.NODE_BORDER_PAINT);
 		nodeBorderColorMapping.putMapValue("small molecule", COLOR_MOLECULE);
 		nodeBorderColorMapping.putMapValue("gene", Color.DARK_GRAY);
 		defStyle.addVisualMappingFunction(nodeBorderColorMapping);
 		
-		final DiscreteMapping<String, Double> nodeBorderWidthMapping = (DiscreteMapping<String, Double>) discreteMappingFactory
+		final DiscreteMapping<String, Double> nodeBorderWidthMapping = (DiscreteMapping<String, Double>) dmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.INTERACTOR_TYPE, String.class, BasicVisualLexicon.NODE_BORDER_WIDTH);
 		nodeBorderWidthMapping.putMapValue("small molecule", 10d);
 		nodeBorderWidthMapping.putMapValue("gene", 4d);
 		defStyle.addVisualMappingFunction(nodeBorderWidthMapping);
 	
 
-		final DiscreteMapping<String, Double> edgeWidthMapping = (DiscreteMapping<String, Double>) discreteMappingFactory
+		final DiscreteMapping<String, Double> edgeWidthMapping = (DiscreteMapping<String, Double>) dmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.PRIMARY_INTERACTION_TYPE, String.class, BasicVisualLexicon.EDGE_WIDTH);
 		edgeWidthMapping.putMapValue("colocalization", 3d);
 		edgeWidthMapping.putMapValue("predicted interaction", 1d);
 		defStyle.addVisualMappingFunction(edgeWidthMapping);
 		
-		final DiscreteMapping<String, LineType> edgeLineTypeMapping = (DiscreteMapping<String, LineType>) discreteMappingFactory
+		final DiscreteMapping<String, LineType> edgeLineTypeMapping = (DiscreteMapping<String, LineType>) dmFactory
 				.createVisualMappingFunction(InteractionClusterMapper.PRIMARY_INTERACTION_TYPE, String.class, BasicVisualLexicon.EDGE_LINE_TYPE);
 		
 		edgeLineTypeMapping.putMapValue("colocalization", LineTypeVisualProperty.LONG_DASH);

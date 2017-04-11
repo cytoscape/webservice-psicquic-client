@@ -1,12 +1,35 @@
 package org.cytoscape.webservice.psicquic.mapper;
 
+import static org.cytoscape.webservice.psicquic.mapper.InteractionClusterMapper.TAXNOMY;
+import static org.cytoscape.webservice.psicquic.mapper.InteractionClusterMapper.TAXNOMY_NAME;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import org.cytoscape.model.CyEdge;
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.model.CyNetworkFactory;
+import org.cytoscape.model.CyNode;
+import org.cytoscape.model.CyTable;
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.model.View;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import uk.ac.ebi.enfin.mi.cluster.EncoreInteraction;
+import uk.ac.ebi.enfin.mi.cluster.InteractionCluster;
+
 /*
  * #%L
  * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -23,33 +46,6 @@ package org.cytoscape.webservice.psicquic.mapper;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-
-import static org.cytoscape.webservice.psicquic.mapper.InteractionClusterMapper.TAXNOMY;
-import static org.cytoscape.webservice.psicquic.mapper.InteractionClusterMapper.TAXNOMY_NAME;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-
-import org.cytoscape.model.CyEdge;
-import org.cytoscape.model.CyNetwork;
-import org.cytoscape.model.CyNetworkFactory;
-import org.cytoscape.model.CyNode;
-import org.cytoscape.model.CyRow;
-import org.cytoscape.model.CyTable;
-import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.model.View;
-import org.cytoscape.view.model.events.UpdateNetworkPresentationEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import uk.ac.ebi.enfin.mi.cluster.EncoreInteraction;
-import uk.ac.ebi.enfin.mi.cluster.InteractionCluster;
 
 // TODO Make this smarter
 public class CyNetworkBuilder {
@@ -80,20 +76,20 @@ public class CyNetworkBuilder {
 	final String fisrtSeparator = "\t";
 	final String secondSeparator = ",";
 
-	private final CyNetworkFactory networkFactory;
-
 	volatile boolean cancel = false;
 
 	private Map<String, CyNode> nodeMap;
 
-	public CyNetworkBuilder(final CyNetworkFactory networkFactory) {
-		this.networkFactory = networkFactory;
+	private final CyServiceRegistrar serviceRegistrar;
+
+	public CyNetworkBuilder(final CyServiceRegistrar serviceRegistrar) {
+		this.serviceRegistrar = serviceRegistrar;
 		mapper = new InteractionClusterMapper();
 		mapper.ensureInitialized();
 	}
 
 	public CyNetwork buildNetwork(final InteractionCluster iC) throws IOException {
-		CyNetwork network = networkFactory.createNetwork();
+		CyNetwork network = serviceRegistrar.getService(CyNetworkFactory.class).createNetwork();
 		process(iC, network, null, null);
 		return network;
 	}
@@ -106,9 +102,8 @@ public class CyNetworkBuilder {
 	 * @throws IOException
 	 */
 	public CyNetwork buildNetwork(final BufferedReader reader, final String networkTitle) throws IOException {
-
 		// Create empty network even if there is no result.
-		final CyNetwork network = networkFactory.createNetwork();
+		final CyNetwork network = serviceRegistrar.getService(CyNetworkFactory.class).createNetwork();
 		network.getDefaultNetworkTable().createColumn("source", String.class, true);
 		network.getRow(network).set("source", networkTitle);
 		network.getRow(network).set(CyNetwork.NAME, networkTitle);

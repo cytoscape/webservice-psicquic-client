@@ -1,12 +1,35 @@
 package org.cytoscape.webservice.psicquic.task;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.cytoscape.model.CyColumn;
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.model.CyNode;
+import org.cytoscape.model.CyRow;
+import org.cytoscape.model.CyTable;
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.model.View;
+import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
+import org.cytoscape.webservice.psicquic.PSICQUICRestClient.SearchMode;
+import org.cytoscape.webservice.psicquic.RegistryManager;
+import org.cytoscape.webservice.psicquic.mapper.CyNetworkBuilder;
+import org.cytoscape.work.AbstractTask;
+import org.cytoscape.work.ProvidesTitle;
+import org.cytoscape.work.TaskMonitor;
+import org.cytoscape.work.Tunable;
+import org.cytoscape.work.util.ListSingleSelection;
+
 /*
  * #%L
  * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -24,34 +47,8 @@ package org.cytoscape.webservice.psicquic.task;
  * #L%
  */
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.cytoscape.event.CyEventHelper;
-import org.cytoscape.model.CyColumn;
-import org.cytoscape.model.CyNetwork;
-import org.cytoscape.model.CyNode;
-import org.cytoscape.model.CyRow;
-import org.cytoscape.model.CyTable;
-import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
-import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.model.View;
-import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
-import org.cytoscape.webservice.psicquic.RegistryManager;
-import org.cytoscape.webservice.psicquic.PSICQUICRestClient.SearchMode;
-import org.cytoscape.webservice.psicquic.mapper.CyNetworkBuilder;
-import org.cytoscape.work.AbstractTask;
-import org.cytoscape.work.ProvidesTitle;
-import org.cytoscape.work.TaskMonitor;
-import org.cytoscape.work.Tunable;
-import org.cytoscape.work.util.ListSingleSelection;
-
 /**
  * Create query based on the selected node
- * 
  */
 public class BuildQueryTask extends AbstractTask {
 	
@@ -69,49 +66,51 @@ public class BuildQueryTask extends AbstractTask {
 	private final CyTable table;
 	private final View<CyNode> nodeView;
 
-	private final CyEventHelper eh;
-	private final VisualMappingManager vmm;
-
-	private final CyLayoutAlgorithmManager layouts;
 	private final CyNetworkBuilder builder;
-
 	private final CyNetworkView netView;
 
 	private final Map<String, CyColumn> colName2column;
+	
+	private final CyServiceRegistrar serviceRegistrar;
 
-	BuildQueryTask(final CyNetworkView netView, final View<CyNode> nodeView, CyEventHelper eh,
-			VisualMappingManager vmm, final PSICQUICRestClient client, final RegistryManager manager,
-			final CyLayoutAlgorithmManager layouts, final CyNetworkBuilder builder) {
+	BuildQueryTask(
+			final CyNetworkView netView,
+			final View<CyNode> nodeView,
+			final PSICQUICRestClient client,
+			final RegistryManager manager,
+			final CyNetworkBuilder builder,
+			final CyServiceRegistrar serviceRegistrar
+	) {
 		this.table = netView.getModel().getDefaultNodeTable();
 		this.nodeView = nodeView;
 		this.manager = manager;
-		this.eh = eh;
-		this.vmm = vmm;
 		this.client = client;
-		this.layouts = layouts;
 		this.builder = builder;
 		this.netView = netView;
+		this.serviceRegistrar = serviceRegistrar;
 
-		colName2column = new HashMap<String, CyColumn>();
+		colName2column = new HashMap<>();
 		final Collection<CyColumn> columns = table.getColumns();
-
 		final CyRow row = table.getRow(nodeView.getModel().getSUID());
 
 		String defaultSelection = null;
-
 		boolean alreadySet = false;
+		
 		for (CyColumn col : columns) {
 			final Object val = row.get(col.getName(), col.getType());
+			
 			if (val != null && col.getType() == String.class) {
 				final String labelString = col.getName() + " (" + val.toString() + ")";
 				colName2column.put(labelString, col);
+				
 				if (col.getName().equals(CyNetwork.NAME) && !alreadySet )
 					defaultSelection = labelString;
 				else if( col.getName().equals("identifier") )
 					defaultSelection = labelString;
 			}
 		}
-		columnList = new ListSingleSelection<String>(new ArrayList<String>(colName2column.keySet()));
+		
+		columnList = new ListSingleSelection<>(new ArrayList<>(colName2column.keySet()));
 
 		if (defaultSelection != null)
 			columnList.setSelectedValue(defaultSelection);
@@ -119,7 +118,6 @@ public class BuildQueryTask extends AbstractTask {
 
 	@Override
 	public void run(TaskMonitor taskMonitor) throws Exception {
-
 		final String selectedStr = columnList.getSelectedValue();
 		final CyColumn selected = colName2column.get(selectedStr);
 		final Object value = table.getRow(nodeView.getModel().getSUID()).get(selected.getName(), selected.getType());
@@ -128,13 +126,13 @@ public class BuildQueryTask extends AbstractTask {
 			throw new NullPointerException("Selected column value is null: " + selected.getName());
 
 		final String query = value.toString();
-		SearchRecoredsTask searchTask = new SearchRecoredsTask(client, SearchMode.INTERACTOR);
+		SearchRecordsTask searchTask = new SearchRecordsTask(client, SearchMode.INTERACTOR);
 		final Map<String, String> activeSource = manager.getActiveServices();
 		searchTask.setQuery(query);
 		searchTask.setTargets(activeSource.values());
 
 		final ProcessSearchResultTask expandTask = new ProcessSearchResultTask(query, client, searchTask, netView,
-				nodeView, eh, vmm, layouts, manager, builder);
+				nodeView, manager, builder, serviceRegistrar);
 
 		insertTasksAfterCurrentTask(searchTask, expandTask);
 	}

@@ -1,12 +1,23 @@
 package org.cytoscape.webservice.psicquic.task;
 
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.model.CyNode;
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.task.AbstractNodeViewTaskFactory;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.model.View;
+import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
+import org.cytoscape.webservice.psicquic.RegistryManager;
+import org.cytoscape.webservice.psicquic.mapper.CyNetworkBuilder;
+import org.cytoscape.work.TaskIterator;
+
 /*
  * #%L
  * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -24,43 +35,30 @@ package org.cytoscape.webservice.psicquic.task;
  * #L%
  */
 
-import org.cytoscape.event.CyEventHelper;
-import org.cytoscape.model.CyNetwork;
-import org.cytoscape.model.CyNode;
-import org.cytoscape.task.AbstractNodeViewTaskFactory;
-import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
-import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.model.View;
-import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
-import org.cytoscape.webservice.psicquic.RegistryManager;
-import org.cytoscape.webservice.psicquic.mapper.CyNetworkBuilder;
-import org.cytoscape.work.TaskIterator;
-
 /**
  * Display "Expand" context menu.
- *
  */
 public class ExpandNodeContextMenuFactory extends AbstractNodeViewTaskFactory {
 
-	private final CyEventHelper eh;
-	private final VisualMappingManager vmm;
 	private final RegistryManager manager;
 	private final PSICQUICRestClient client;
-
-	private final CyLayoutAlgorithmManager layouts;
 	private final CyNetworkBuilder builder;
 
-	public ExpandNodeContextMenuFactory(CyEventHelper eh, VisualMappingManager vmm, final PSICQUICRestClient client,
-			final RegistryManager manager, final CyLayoutAlgorithmManager layouts, final CyNetworkBuilder builder) {
-		this.eh = eh;
-		this.vmm = vmm;
+	private final CyServiceRegistrar serviceRegistrar;
+
+	public ExpandNodeContextMenuFactory(
+			final PSICQUICRestClient client,
+			final RegistryManager manager,
+			final CyNetworkBuilder builder,
+			final CyServiceRegistrar serviceRegistrar
+	) {
 		this.client = client;
 		this.manager = manager;
-		this.layouts = layouts;
 		this.builder = builder;
+		this.serviceRegistrar = serviceRegistrar;
 	}
-
+	
+	@Override
 	public TaskIterator createTaskIterator(View<CyNode> nodeView, CyNetworkView netView) {
 		if (manager == null)
 			throw new NullPointerException("RegistryManager is null");
@@ -68,10 +66,10 @@ public class ExpandNodeContextMenuFactory extends AbstractNodeViewTaskFactory {
 		// Create query
 		String query = netView.getModel().getDefaultNodeTable().getRow(nodeView.getModel().getSUID())
 				.get(CyNetwork.NAME, String.class);
+		
 		if (query == null)
 			throw new NullPointerException("Query object is null.");
-		else {
-			return new TaskIterator(new BuildQueryTask(netView, nodeView, eh, vmm, client, manager, layouts, builder));
-		}
+		else
+			return new TaskIterator(new BuildQueryTask(netView, nodeView, client, manager, builder, serviceRegistrar));
 	}
 }

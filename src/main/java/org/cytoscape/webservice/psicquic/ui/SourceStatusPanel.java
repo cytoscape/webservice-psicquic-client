@@ -1,29 +1,5 @@
 package org.cytoscape.webservice.psicquic.ui;
 
-/*
- * #%L
- * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
- * $Id:$
- * $HeadURL:$
- * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/lgpl-2.1.html>.
- * #L%
- */
-
 import static javax.swing.GroupLayout.DEFAULT_SIZE;
 import static javax.swing.GroupLayout.PREFERRED_SIZE;
 import static org.cytoscape.util.swing.LookAndFeelUtil.isAquaLAF;
@@ -62,13 +38,11 @@ import javax.swing.table.TableModel;
 
 import org.cytoscape.application.swing.CyAction;
 import org.cytoscape.model.CyNetwork;
-import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.task.create.CreateNetworkViewTaskFactory;
 import org.cytoscape.util.swing.LookAndFeelUtil;
 import org.cytoscape.view.model.CyNetworkViewManager;
-import org.cytoscape.view.vizmap.VisualMappingManager;
 import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
 import org.cytoscape.webservice.psicquic.PSICQUICRestClient.SearchMode;
 import org.cytoscape.webservice.psicquic.PSIMI25VisualStyleBuilder;
@@ -78,8 +52,32 @@ import org.cytoscape.work.FinishStatus;
 import org.cytoscape.work.FinishStatus.Type;
 import org.cytoscape.work.ObservableTask;
 import org.cytoscape.work.TaskIterator;
-import org.cytoscape.work.TaskManager;
 import org.cytoscape.work.TaskObserver;
+import org.cytoscape.work.swing.DialogTaskManager;
+
+/*
+ * #%L
+ * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
+ * $Id:$
+ * $HeadURL:$
+ * %%
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as 
+ * published by the Free Software Foundation, either version 2.1 of the 
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Lesser Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Lesser Public 
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/lgpl-2.1.html>.
+ * #L%
+ */
 
 @SuppressWarnings("serial")
 public class SourceStatusPanel extends JPanel implements TaskObserver {
@@ -100,22 +98,12 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 	private final RegistryManager manager;
 	private final PSICQUICRestClient client;
 	private String query;
-	private final CyNetworkManager networkManager;
-
-	private final TaskManager<?, ?> taskManager;
-
 	private final SearchMode mode;
 
-	private final CreateNetworkViewTaskFactory createViewTaskFactory;
-
 	private final PSIMI25VisualStyleBuilder vsBuilder;
-	private final VisualMappingManager vmm;
-
 	private final PSIMITagManager tagManager;
 
-	private final CyProperty<Properties> props;
-
-	private final CyServiceRegistrar registrar;
+	private final CyServiceRegistrar serviceRegistrar;
 
 	private int interactionsFound;
 		
@@ -126,44 +114,38 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 	private JScrollPane resultScrollPane;
 	private JTable resultTable;
 
-	/**
-	 * Creates new form PSICQUICResultDialog
-	 * 
-	 */
-	public SourceStatusPanel(final String query, final PSICQUICRestClient client, final RegistryManager manager,
-			final CyNetworkManager networkManager, final Map<String, Long> result, final TaskManager<?, ?> taskManager,
-			final SearchMode mode, final CreateNetworkViewTaskFactory createViewTaskFactory,
-			final PSIMI25VisualStyleBuilder vsBuilder, final VisualMappingManager vmm,
-			final PSIMITagManager tagManager, final CyProperty<Properties> props, final CyServiceRegistrar registrar) 
-	{
+	public SourceStatusPanel(
+			final String query,
+			final PSICQUICRestClient client,
+			final RegistryManager manager,
+			final Map<String, Long> result,
+			final SearchMode mode,
+			final PSIMI25VisualStyleBuilder vsBuilder,
+			final PSIMITagManager tagManager,
+			final CyServiceRegistrar serviceRegistrar
+	) {
 		this.manager = manager;
 		this.client = client;
 		this.query = query;
-		this.networkManager = networkManager;
-		this.taskManager = taskManager;
 		this.tagManager = tagManager;
-		this.props = props;
-		this.registrar = registrar;
+		this.serviceRegistrar = serviceRegistrar;
 		
 		if (mode == SearchMode.SPECIES)
 			this.mode = SearchMode.MIQL;
 		else
 			this.mode = mode;
-		this.createViewTaskFactory = createViewTaskFactory;
-		this.vmm = vmm;
+		
 		this.vsBuilder = vsBuilder;
 
 		setTableModel(result);
 		refreshGUI();
-		
-		setBorder(LookAndFeelUtil.createTitledBorder("2. Select Databases"));
 		
 		if (LookAndFeelUtil.isAquaLAF())
 			setOpaque(false);
 		
 		resultTable.setEnabled(false);
 
-		this.registrar.registerService(this, TaskObserver.class, new Properties());
+		this.serviceRegistrar.registerService(this, TaskObserver.class, new Properties());
 	}
 
 	private void refreshGUI() {
@@ -180,6 +162,7 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		this.setEnabled(enable);
 	}
 
+	@SuppressWarnings("unchecked")
 	public Set<String> getSelected() {
 		if (cancelFlag)
 			return null;
@@ -188,8 +171,10 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		final StringBuilder builder = new StringBuilder();
 
 		TableModel model = this.resultTable.getModel();
+		
 		for (int i = 0; i < model.getRowCount(); i++) {
 			Boolean selected = (Boolean) model.getValueAt(i, IMPORT_COLUMN_INDEX);
+			
 			if (selected == null)
 				selected = false;
 
@@ -202,10 +187,15 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 
 		// Save selection as property
 		String selectedSourceString = builder.toString();
+		
 		if (selectedSourceString.equals("") == false) {
 			selectedSourceString = selectedSourceString.substring(0, selectedSourceString.length() - 1);
+			
+			CyProperty<Properties> props = 
+					serviceRegistrar.getService(CyProperty.class, "(cyPropertyName=cytoscape3.props)");
 			props.getProperties().setProperty(PSICQUICSearchUI.PROP_NAME, selectedSourceString);
 		}
+		
 		return selectedService;
 	}
 
@@ -402,7 +392,7 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		);
 	}
 
-	void doImport() {
+	public void doImport() {
 		final boolean mergeNetwork = clusterResultCheckBox.isSelected();
 		final Set<String> targetSources = getSelected();
 		final Set<String> sourceURLs = new HashSet<String>();
@@ -417,8 +407,9 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 
 		// Execute Import Task
 		final ImportNetworkFromPSICQUICTask networkTask = new ImportNetworkFromPSICQUICTask(query, client,
-				networkManager, sourceURLs, mode, createViewTaskFactory, vsBuilder, vmm, mergeNetwork, registrar);
+				sourceURLs, mode, vsBuilder, mergeNetwork, serviceRegistrar);
 
+		DialogTaskManager taskManager = serviceRegistrar.getService(DialogTaskManager.class);
 		taskManager.execute(new TaskIterator(networkTask), this);
 	}
 
@@ -439,7 +430,7 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		}
 	}
 
-	void setSelected(final Set<String> sources) {
+	public void setSelected(final Set<String> sources) {
 		for (int i = 0; i < resultTable.getRowCount(); i++) {
 			final String dbName = resultTable.getValueAt(i, DB_NAME_COLUMN_INDEX).toString();
 			if (sources.contains(dbName)) {
@@ -608,7 +599,7 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 	 * Force to sort row
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	void sort() {
+	public void sort() {
 		RowSorter<? extends TableModel> sorter = this.resultTable.getRowSorter();
 		
 		if (sorter instanceof DefaultRowSorter) {
@@ -620,7 +611,7 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		}
 	}
 
-	void setQuery(final String query) {
+	public void setQuery(final String query) {
 		this.query = query;
 	}
 
@@ -639,7 +630,7 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 			final StringBuilder builder = new StringBuilder();
 			builder.append("<html><h3>Networks created from the following databases:</h3><ul>");
 			
-			final CyNetworkViewManager netViewManager = registrar.getService(CyNetworkViewManager.class);
+			final CyNetworkViewManager netViewManager = serviceRegistrar.getService(CyNetworkViewManager.class);
 			final List<CyNetwork> networksWithoutView = new ArrayList<>();
 			
 			for (final CyNetwork network : results) {
@@ -731,12 +722,16 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 	}
 	
 	private void createMissingNetworkViews(final List<CyNetwork> networks) {
+		DialogTaskManager taskManager = serviceRegistrar.getService(DialogTaskManager.class);
+		CreateNetworkViewTaskFactory createViewTaskFactory =
+				serviceRegistrar.getService(CreateNetworkViewTaskFactory.class);
+		
 		taskManager.execute(createViewTaskFactory.createTaskIterator(networks));
 	}
 	
 	private void doNetworkMerge() {
 		try {
-			CyAction mergeAction = registrar.getService(CyAction.class, "(id=networkMergeAction)");
+			CyAction mergeAction = serviceRegistrar.getService(CyAction.class, "(id=networkMergeAction)");
 			mergeAction.actionPerformed(null);
 		}
 		catch(Throwable t) {

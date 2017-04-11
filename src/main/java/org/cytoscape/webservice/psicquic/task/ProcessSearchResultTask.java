@@ -1,12 +1,25 @@
 package org.cytoscape.webservice.psicquic.task;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.cytoscape.model.CyNode;
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.model.View;
+import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
+import org.cytoscape.webservice.psicquic.RegistryManager;
+import org.cytoscape.webservice.psicquic.mapper.CyNetworkBuilder;
+import org.cytoscape.work.AbstractTask;
+import org.cytoscape.work.TaskMonitor;
+
 /*
  * #%L
  * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -24,57 +37,43 @@ package org.cytoscape.webservice.psicquic.task;
  * #L%
  */
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.cytoscape.event.CyEventHelper;
-import org.cytoscape.model.CyNode;
-import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
-import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.model.View;
-import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
-import org.cytoscape.webservice.psicquic.RegistryManager;
-import org.cytoscape.webservice.psicquic.mapper.CyNetworkBuilder;
-import org.cytoscape.work.AbstractTask;
-import org.cytoscape.work.TaskMonitor;
-
 /**
  * Add new edges to the existing network
- *
  */
 public class ProcessSearchResultTask extends AbstractTask {
+	
 	private final PSICQUICRestClient client;
-
 	private final String query;
-
-	private final SearchRecoredsTask searchTask;
-	private final CyLayoutAlgorithmManager layouts;
+	private final SearchRecordsTask searchTask;
 
 	private final CyNetworkView netView;
 	private final View<CyNode> nodeView;
-
-	private final CyEventHelper eh;
-	private final VisualMappingManager vmm;
 
 	private volatile boolean canceled = false;
 
 	private final RegistryManager registryManager;
 	private final CyNetworkBuilder builder;
 
-	public ProcessSearchResultTask(final String query, final PSICQUICRestClient client, final SearchRecoredsTask searchTask,
-			final CyNetworkView parentNetworkView, final View<CyNode> nodeView, final CyEventHelper eh,
-			final VisualMappingManager vmm, final CyLayoutAlgorithmManager layouts, final RegistryManager registryManager, final CyNetworkBuilder builder) {
+	private final CyServiceRegistrar serviceRegistrar;
+
+	public ProcessSearchResultTask(
+			final String query,
+			final PSICQUICRestClient client,
+			final SearchRecordsTask searchTask,
+			final CyNetworkView parentNetworkView,
+			final View<CyNode> nodeView,
+			final RegistryManager registryManager,
+			final CyNetworkBuilder builder,
+			final CyServiceRegistrar serviceRegistrar
+	) {
 		this.client = client;
 		this.query = query;
 		this.netView = parentNetworkView;
 		this.nodeView = nodeView;
-		this.eh = eh;
-		this.vmm = vmm;
 		this.searchTask = searchTask;
-		this.layouts = layouts;
 		this.registryManager = registryManager;
 		this.builder = builder;
+		this.serviceRegistrar = serviceRegistrar;
 	}
 
 	@Override
@@ -83,11 +82,12 @@ public class ProcessSearchResultTask extends AbstractTask {
 		taskMonitor.setStatusMessage("Loading interaction from remote service...");
 		taskMonitor.setProgress(0.01d);
 		
-		if(canceled)
+		if (canceled)
 			return;
 		
 		Map<String, String> result = processSearchResult();
-		insertTasksAfterCurrentTask(new ExpandFromSelectedSourcesTask(query, client, result, netView, nodeView, eh, vmm, layouts, builder));
+		insertTasksAfterCurrentTask(
+				new ExpandFromSelectedSourcesTask(query, client, result, netView, nodeView, builder, serviceRegistrar));
 		taskMonitor.setProgress(1.0d);
 	}
 	
@@ -98,7 +98,7 @@ public class ProcessSearchResultTask extends AbstractTask {
 	}
 
 	private final Map<String, String> processSearchResult() {
-		final Map<String, String> sourceMap = new HashMap<String, String>();
+		final Map<String, String> sourceMap = new HashMap<>();
 		final Map<String, Long> rs = searchTask.getResult();
 		
 		for (final String sourceURL : rs.keySet()) {
@@ -107,7 +107,8 @@ public class ProcessSearchResultTask extends AbstractTask {
 				continue;
 
 			sourceMap.put(registryManager.getSource2NameMap().get(sourceURL) + ": " + interactionCount, sourceURL);
-		}		
+		}
+		
 		return sourceMap;
 	}
 }

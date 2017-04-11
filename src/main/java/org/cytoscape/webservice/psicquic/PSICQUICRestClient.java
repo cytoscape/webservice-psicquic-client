@@ -1,29 +1,5 @@
 package org.cytoscape.webservice.psicquic;
 
-/*
- * #%L
- * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
- * $Id:$
- * $HeadURL:$
- * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/lgpl-2.1.html>.
- * #L%
- */
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,7 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.cytoscape.model.CyNetwork;
-import org.cytoscape.model.CyNetworkFactory;
+import org.cytoscape.service.util.CyServiceRegistrar;
 import org.cytoscape.webservice.psicquic.mapper.CyNetworkBuilder;
 import org.cytoscape.webservice.psicquic.simpleclient.PSICQUICSimpleClient;
 import org.cytoscape.work.TaskMonitor;
@@ -62,9 +38,32 @@ import psidev.psi.mi.tab.PsimiTabReader;
 import psidev.psi.mi.tab.model.BinaryInteraction;
 import uk.ac.ebi.enfin.mi.cluster.InteractionCluster;
 
+/*
+ * #%L
+ * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
+ * $Id:$
+ * $HeadURL:$
+ * %%
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as 
+ * published by the Free Software Foundation, either version 2.1 of the 
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Lesser Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Lesser Public 
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/lgpl-2.1.html>.
+ * #L%
+ */
+
 /**
  * Light-weight REST client based on SimpleClient by EBI team.
- * 
  */
 public final class PSICQUICRestClient {
 
@@ -98,17 +97,18 @@ public final class PSICQUICRestClient {
 	// Timeout for import. TODO: Make public as property.
 	private static final long IMPORT_TIMEOUT = 1000;
 
-	private final CyNetworkFactory factory;
 	private final RegistryManager regManager;
 	private final CyNetworkBuilder builder;
 
+	private final CyServiceRegistrar serviceRegistrar;
+
 	private static volatile boolean canceled = false;
 
-	public PSICQUICRestClient(final CyNetworkFactory factory, final RegistryManager regManager,
-			final CyNetworkBuilder builder) {
-		this.factory = factory;
+	public PSICQUICRestClient(RegistryManager regManager, CyNetworkBuilder builder,
+			CyServiceRegistrar serviceRegistrar) {
 		this.regManager = regManager;
 		this.builder = builder;
+		this.serviceRegistrar = serviceRegistrar;
 	}
 
 	/**
@@ -116,13 +116,6 @@ public final class PSICQUICRestClient {
 	 * done by MiCluster.
 	 * 
 	 * TODO: Merge should be replaced by advanced network merge.
-	 * 
-	 * @param query
-	 * @param targetServices
-	 * @param mode
-	 * @param tm
-	 * @return
-	 * @throws IOException
 	 */
 	public CyNetwork importMergedNetwork(final String query, final Collection<String> targetServices,
 			final SearchMode mode, final TaskMonitor tm) throws IOException {
@@ -195,10 +188,11 @@ public final class PSICQUICRestClient {
 		final SortedSet<String> sourceSet = new TreeSet<String>();
 		final SortedSet<String> nameSet = new TreeSet<String>();
 		final Set<ImportNetworkTask> taskSet = new HashSet<ImportNetworkTask>();
+		
 		for (final String serviceURL : targetServices) {
 			final String networkTitle = regManager.getSource2NameMap().get(serviceURL);
 			nameSet.add(networkTitle);
-			final ImportNetworkTask task = new ImportNetworkTask(networkTitle, serviceURL, query, mode, factory);
+			ImportNetworkTask task = new ImportNetworkTask(networkTitle, serviceURL, query, mode, serviceRegistrar);
 			completionService.submit(task);
 			taskSet.add(task);
 			sourceSet.add(serviceURL);
@@ -566,15 +560,15 @@ public final class PSICQUICRestClient {
 		private final String networkTitle;
 
 		// The network created from the result.
-		private CyNetwork network = null;
+		private CyNetwork network;
 
 		private ImportNetworkTask(final String networkTitle, final String serviceURL, final String query,
-				final SearchMode mode, final CyNetworkFactory factory) {
+				final SearchMode mode, final CyServiceRegistrar serviceRegistrar) {
 			this.serviceURL = serviceURL;
 			this.query = query;
 			this.mode = mode;
 			this.networkTitle = networkTitle;
-			this.builder = new CyNetworkBuilder(factory);
+			this.builder = new CyNetworkBuilder(serviceRegistrar);
 		}
 
 		@Override
