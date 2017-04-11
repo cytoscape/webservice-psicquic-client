@@ -1,12 +1,22 @@
 package org.cytoscape.webservice.psicquic.task;
 
+import java.util.Collection;
+import java.util.Map;
+
+import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
+import org.cytoscape.webservice.psicquic.PSICQUICRestClient.SearchMode;
+import org.cytoscape.work.AbstractTask;
+import org.cytoscape.work.TaskMonitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /*
  * #%L
  * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -24,18 +34,9 @@ package org.cytoscape.webservice.psicquic.task;
  * #L%
  */
 
-import java.util.Collection;
-import java.util.Map;
-
-import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
-import org.cytoscape.webservice.psicquic.PSICQUICRestClient.SearchMode;
-import org.cytoscape.work.AbstractTask;
-import org.cytoscape.work.TaskMonitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class SearchRecoredsTask extends AbstractTask {
-	private static final Logger logger = LoggerFactory.getLogger(SearchRecoredsTask.class);
+public class SearchRecordsTask extends AbstractTask {
+	
+	private static final Logger logger = LoggerFactory.getLogger(SearchRecordsTask.class);
 	
 	private final PSICQUICRestClient client;
 	private final SearchMode mode;
@@ -46,7 +47,7 @@ public class SearchRecoredsTask extends AbstractTask {
 
 	private Map<String, Long> result;
 	
-	public SearchRecoredsTask(final PSICQUICRestClient client, final SearchMode mode) {
+	public SearchRecordsTask(final PSICQUICRestClient client, final SearchMode mode) {
 		this.client = client;
 		this.mode = mode;
 	}
@@ -77,6 +78,10 @@ public class SearchRecoredsTask extends AbstractTask {
 
 	public void setQuery(final String query) {
 		this.query = query;
+	}
+	
+	public String getQuery() {
+		return query;
 	}
 	
 	public Map<String, Long> getResult() {

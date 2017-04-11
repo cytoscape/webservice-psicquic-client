@@ -1,12 +1,40 @@
 package org.cytoscape.webservice.psicquic.task;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.cytoscape.model.CyNetwork;
+import org.cytoscape.model.CyNode;
+import org.cytoscape.model.CyRow;
+import org.cytoscape.service.util.CyServiceRegistrar;
+import org.cytoscape.view.layout.CyLayoutAlgorithm;
+import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
+import org.cytoscape.view.model.CyNetworkView;
+import org.cytoscape.view.model.View;
+import org.cytoscape.view.vizmap.VisualMappingManager;
+import org.cytoscape.view.vizmap.VisualStyle;
+import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
+import org.cytoscape.webservice.psicquic.PSICQUICRestClient.SearchMode;
+import org.cytoscape.webservice.psicquic.mapper.CyNetworkBuilder;
+import org.cytoscape.work.AbstractTask;
+import org.cytoscape.work.TaskIterator;
+import org.cytoscape.work.TaskMonitor;
+import org.cytoscape.work.Tunable;
+import org.cytoscape.work.util.ListMultipleSelection;
+
+import uk.ac.ebi.enfin.mi.cluster.InteractionCluster;
+
 /*
  * #%L
  * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -24,39 +52,7 @@ package org.cytoscape.webservice.psicquic.task;
  * #L%
  */
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.cytoscape.event.CyEventHelper;
-import org.cytoscape.model.CyNetwork;
-import org.cytoscape.model.CyNode;
-import org.cytoscape.model.CyRow;
-import org.cytoscape.view.layout.CyLayoutAlgorithm;
-import org.cytoscape.view.layout.CyLayoutAlgorithmManager;
-import org.cytoscape.view.model.CyNetworkView;
-import org.cytoscape.view.model.View;
-import org.cytoscape.view.vizmap.VisualMappingManager;
-import org.cytoscape.view.vizmap.VisualStyle;
-import org.cytoscape.webservice.psicquic.PSICQUICRestClient;
-import org.cytoscape.webservice.psicquic.PSICQUICRestClient.SearchMode;
-import org.cytoscape.webservice.psicquic.mapper.CyNetworkBuilder;
-import org.cytoscape.work.AbstractTask;
-import org.cytoscape.work.TaskIterator;
-import org.cytoscape.work.TaskMonitor;
-import org.cytoscape.work.Tunable;
-import org.cytoscape.work.util.ListMultipleSelection;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import uk.ac.ebi.enfin.mi.cluster.InteractionCluster;
-
 public class ExpandFromSelectedSourcesTask extends AbstractTask {
-
-	private static final Logger logger = LoggerFactory.getLogger(ExpandFromSelectedSourcesTask.class);
 
 	@Tunable(description="Select Data Source:")
 	public ListMultipleSelection<String> services;
@@ -68,33 +64,34 @@ public class ExpandFromSelectedSourcesTask extends AbstractTask {
 
 	private final String query;
 
-	private final CyLayoutAlgorithmManager layouts;
-
 	private final CyNetworkView netView;
 	private final View<CyNode> nodeView;
-
-	private final CyEventHelper eventHelper;
-	private final VisualMappingManager vmm;
 
 	private volatile boolean canceled = false;
 	
 	private final Map<String, String> sourceMap;
 
-	public ExpandFromSelectedSourcesTask(final String query, final PSICQUICRestClient client, final Map<String, String> sourceMap,
-			final CyNetworkView parentNetworkView, final View<CyNode> nodeView, final CyEventHelper eh,
-			final VisualMappingManager vmm, final CyLayoutAlgorithmManager layouts, final CyNetworkBuilder builder) {
+	private final CyServiceRegistrar serviceRegistrar;
+
+	public ExpandFromSelectedSourcesTask(
+			final String query,
+			final PSICQUICRestClient client,
+			final Map<String, String> sourceMap,
+			final CyNetworkView parentNetworkView,
+			final View<CyNode> nodeView,
+			final CyNetworkBuilder builder,
+			final CyServiceRegistrar serviceRegistrar
+	) {
 		this.client = client;
 		this.query = query;
 		this.netView = parentNetworkView;
 		this.nodeView = nodeView;
-		this.eventHelper = eh;
-		this.vmm = vmm;
-		this.layouts = layouts;
 		this.sourceMap = sourceMap;
 		this.builder = builder;
+		this.serviceRegistrar = serviceRegistrar;
 		
-		final List<String> sourceNames = new ArrayList<String>(sourceMap.keySet());
-		services = new ListMultipleSelection<String>(sourceNames);
+		final List<String> sourceNames = new ArrayList<>(sourceMap.keySet());
+		services = new ListMultipleSelection<>(sourceNames);
 		services.setSelectedValues(sourceNames);		
 	}
 
@@ -105,10 +102,11 @@ public class ExpandFromSelectedSourcesTask extends AbstractTask {
 		
 		taskMonitor.setProgress(0.01d);
 		List<String> selected = services.getSelectedValues();
-		Collection<String> targetServices = new HashSet<String>();
-		for(String targetURL: selected) {
+		Collection<String> targetServices = new HashSet<>();
+		
+		for (String targetURL: selected)
 			targetServices.add(sourceMap.get(targetURL));
-		}
+		
 		// Switch task type based on the user option.
 		InteractionCluster ic = client.importNeighbours(query, targetServices, SearchMode.INTERACTOR, taskMonitor);
 
@@ -120,11 +118,14 @@ public class ExpandFromSelectedSourcesTask extends AbstractTask {
 		taskMonitor.setProgress(0.8d);
 		expand(ic);
 		
-		final CyLayoutAlgorithm layout = layouts.getLayout(DEFAULT_LAYOUT);
-		final Set<View<CyNode>> entries = new HashSet<View<CyNode>>();
+		final CyLayoutAlgorithmManager layoutManager = serviceRegistrar.getService(CyLayoutAlgorithmManager.class);
+		final CyLayoutAlgorithm layout = layoutManager.getLayout(DEFAULT_LAYOUT);
+		final Set<View<CyNode>> entries = new HashSet<>();
 		final CyNetwork network = netView.getModel();
+		
 		for (final CyNode node : network.getNodeList()) {
 			final CyRow row = network.getRow(node);
+			
 			if (row.get(CyNetwork.SELECTED, Boolean.class)) {
 				final View<CyNode> nv = netView.getNodeView(node);
 				entries.add(nv);
@@ -136,12 +137,11 @@ public class ExpandFromSelectedSourcesTask extends AbstractTask {
 		taskMonitor.setProgress(1.0d);
 	}
 
-
 	private void expand(final InteractionCluster iC) {
 		builder.addToNetwork(iC, netView, nodeView);
 
 		// Apply visual style
-		final VisualStyle vs = vmm.getVisualStyle(netView);
+		final VisualStyle vs = serviceRegistrar.getService(VisualMappingManager.class).getVisualStyle(netView);
 		vs.apply(netView);
 		netView.updateView();
 	}

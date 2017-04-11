@@ -1,12 +1,14 @@
 package org.cytoscape.webservice.psicquic.ui;
 
+import javax.swing.JComboBox;
+
 /*
  * #%L
  * Cytoscape PSIQUIC Web Service Impl (webservice-psicquic-client-impl)
  * $Id:$
  * $HeadURL:$
  * %%
- * Copyright (C) 2006 - 2013 The Cytoscape Consortium
+ * Copyright (C) 2006 - 2017 The Cytoscape Consortium
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as 
@@ -23,8 +25,6 @@ package org.cytoscape.webservice.psicquic.ui;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-
-import javax.swing.JComboBox;
 
 public class SelectorBuilder {
 
@@ -50,8 +50,8 @@ public class SelectorBuilder {
 		}
 	}
 
-	public JComboBox getComboBox() {
-		final JComboBox speciesBox = new JComboBox();
+	public JComboBox<Species> getComboBox() {
+		final JComboBox<Species> speciesBox = new JComboBox<>();
 
 		for (final Species sp : Species.values())
 			speciesBox.addItem(sp);
