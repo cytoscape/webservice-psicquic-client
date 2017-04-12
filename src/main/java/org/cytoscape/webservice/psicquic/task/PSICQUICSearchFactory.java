@@ -6,7 +6,6 @@ import static javax.swing.GroupLayout.Alignment.CENTER;
 
 import java.awt.Dialog.ModalityType;
 import java.awt.Dimension;
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -158,23 +157,23 @@ public class PSICQUICSearchFactory extends AbstractNetworkSearchTaskFactory {
 				statusPanel.setSelected(result.keySet());
 				statusPanel.setPreferredSize(new Dimension(680, 360));
 				
+				JFrame parent = serviceRegistrar.getService(CySwingApplication.class).getJFrame();
+				JDialog dialog = new JDialog(parent, "Select Databases", ModalityType.APPLICATION_MODAL);
+				
 				JButton cancelButton = new JButton(new AbstractAction("Cancel") {
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						((Window)statusPanel.getRootPane().getParent()).dispose();
+						dialog.dispose();
 					}
 				});
 				JButton importButton = new JButton(new AbstractAction("Import") {
 					@Override
 					public void actionPerformed(ActionEvent e) {
 						statusPanel.doImport();
+						dialog.dispose();
 					}
 				});
 				JPanel buttonPanel = LookAndFeelUtil.createOkCancelPanel(importButton, cancelButton);
-				
-				JFrame parent = serviceRegistrar.getService(CySwingApplication.class).getJFrame();
-				
-				JDialog dialog = new JDialog(parent, "Select Databases", ModalityType.APPLICATION_MODAL);
 				
 				final GroupLayout layout = new GroupLayout(dialog.getContentPane());
 				dialog.getContentPane().setLayout(layout);
