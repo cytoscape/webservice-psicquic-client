@@ -42,10 +42,14 @@ import org.osgi.framework.BundleContext;
 
 public class CyActivator extends AbstractCyActivator {
 	
+	private static final String WEB_SERVICE_URL = "http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/registry";
+	private static final String MIQL_URL = "http://psicquic.github.io/MiqlDefinition.html";
+	private static final String REGISTRY_URL = "http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/registry?action=STATUS";
+	
 	private static final String CLIENT_DISCRIPTION = 
 			"<p>This is a web service client for <a href=\"" + PSICQUICSearchFactory.WEBSITE_URL + "\">PSICQUIC</a>-compliant databases.</p>" +
-			"<ul><li><a href=\"http://code.google.com/p/psicquic/wiki/MiqlReference\">Query language (MIQL) Syntax</a></li>" +
-			"<li><a href=\"http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/registry?action=STATUS\">List of Supported Databases</a></li></ul>";
+			"<ul><li><a href=\"" + MIQL_URL + "\">Query language (MIQL) Syntax</a></li>" +
+			"<li><a href=\"" + REGISTRY_URL + "\">List of Supported Databases</a></li></ul>";
 	
 	@Override
 	public void start(BundleContext bc) {
@@ -56,7 +60,7 @@ public class CyActivator extends AbstractCyActivator {
 		CyNetworkBuilder builder = new CyNetworkBuilder(serviceRegistrar);
 
 		PSICQUICWebServiceClient psicquicClient = new PSICQUICWebServiceClient(
-				"http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/registry",
+				WEB_SERVICE_URL,
 				"Universal Interaction Database Client",
 				CLIENT_DISCRIPTION, 
 				builder, vsBuilder, tagManager,
