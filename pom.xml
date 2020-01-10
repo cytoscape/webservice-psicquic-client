@@ -11,12 +11,13 @@
 		<junit.version>4.12</junit.version>
 		<maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
 		<maven-bundle-plugin.version>4.1.0</maven-bundle-plugin.version>
+		<maven-surefire-plugin.version>3.0.0-M3</maven-surefire-plugin.version>
 		<osgi.api.version>6.0.0</osgi.api.version>
 	</properties>
 
 	<groupId>org.cytoscape</groupId>
 	<artifactId>webservice-psicquic-client</artifactId>
-	<version>3.4.0</version>
+	<version>3.5.0</version>
 	<name>PSICQUIC Web Service Client</name>
 	<packaging>bundle</packaging>
 
@@ -83,8 +84,8 @@
 				<version>${maven-compiler-plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<source>11</source>
+					<target>11</target>
 					<encoding>UTF-8</encoding>
 					<optimize>true</optimize>
 					<showWarnings>true</showWarnings>
@@ -145,6 +146,11 @@
 					</instructions>
 				</configuration>
 			</plugin>
+			<plugin>
+          		<groupId>org.apache.maven.plugins</groupId>
+          		<artifactId>maven-surefire-plugin</artifactId>
+          		<version>${maven-surefire-plugin.version}</version>
+        	</plugin>
 		</plugins>
 	</build>
 
