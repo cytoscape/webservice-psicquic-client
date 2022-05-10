@@ -542,7 +542,7 @@ public final class PSICQUICRestClient {
 
 			logger.info("Query URL: " + queryURL);
 
-			final PsimiTabReader mitabReader = new PsimiTabReader(false);
+			final PsimiTabReader mitabReader = new PsimiTabReader(/*false*/);
 			return mitabReader.read(queryURL);
 		}
 
