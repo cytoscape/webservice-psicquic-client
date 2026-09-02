@@ -48,7 +48,7 @@ public class PSICQUICClientTest {
 
 	@Before
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
+		MockitoAnnotations.openMocks(this);
 
 //		final String uriString = "http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/registry";
 //		this.locationUri = new URI(uriString);
