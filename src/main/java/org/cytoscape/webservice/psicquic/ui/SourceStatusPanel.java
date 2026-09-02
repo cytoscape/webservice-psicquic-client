@@ -37,6 +37,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
 
 import org.cytoscape.application.swing.CyAction;
+import org.cytoscape.application.swing.CySwingApplication;
 import org.cytoscape.model.CyNetwork;
 import org.cytoscape.property.CyProperty;
 import org.cytoscape.service.util.CyServiceRegistrar;
@@ -663,7 +664,7 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 				options = new String[] { "Close", "Create a view for large networks", "Merge networks manually..." };
 			
 			selection = JOptionPane.showOptionDialog(
-					this,
+					getDialogParent(),
 					builder.toString(),
 					"Import Finished",
 					JOptionPane.DEFAULT_OPTION, 
@@ -701,7 +702,7 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 				}
 			}
 			
-			int selection = JOptionPane.showConfirmDialog(this, 
+			int selection = JOptionPane.showConfirmDialog(getDialogParent(), 
 					builder.toString() + "</ul><br><h3>Do you want to merge these networks?</h3></html>",
 					"Import Canceled", JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE, null);
 			
@@ -710,7 +711,7 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		} else {
 			// Error!
 			JOptionPane.showMessageDialog(
-					this, 
+					getDialogParent(), 
 					"<html>Error: Please try again later.<br><br>" + finishStatus.getException().getLocalizedMessage()
 					+ "</html>", "Import Error",
 					JOptionPane.ERROR_MESSAGE,
@@ -719,6 +720,21 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		}
 
 		results = null;
+	}
+	
+	/**
+	 * Parent for the dialogs this panel opens. The "Select Databases" dialog that hosts this panel is disposed as soon
+	 * as the import starts, so by the time the import finishes this panel no longer belongs to a visible window. Passing
+	 * it to JOptionPane would make the dialog owned by JOptionPane's hidden root frame, which on macOS opens it behind
+	 * the Cytoscape window. Use the main frame as the owner instead.
+	 */
+	private Component getDialogParent() {
+		if (isShowing())
+			return this;
+		
+		final CySwingApplication swingApp = serviceRegistrar.getService(CySwingApplication.class);
+		
+		return swingApp != null ? swingApp.getJFrame() : null;
 	}
 	
 	private void createMissingNetworkViews(final List<CyNetwork> networks) {
@@ -735,7 +751,7 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 			mergeAction.actionPerformed(null);
 		}
 		catch(Throwable t) {
-			JOptionPane.showMessageDialog(this,  "<html>Network merge is currently unavailable.<br>"
+			JOptionPane.showMessageDialog(getDialogParent(),  "<html>Network merge is currently unavailable.<br>"
 					+ "Make sure Cytoscape has finished starting up and try again.</html>", "Network Merge Unavailable",
 					JOptionPane.ERROR_MESSAGE);
 		}
