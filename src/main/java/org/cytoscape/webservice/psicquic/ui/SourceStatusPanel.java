@@ -732,26 +732,24 @@ public class SourceStatusPanel extends JPanel implements TaskObserver {
 		if (isShowing())
 			return this;
 		
-		final CySwingApplication swingApp = serviceRegistrar.getService(CySwingApplication.class);
+		var swingApp = serviceRegistrar.getService(CySwingApplication.class);
 		
 		return swingApp != null ? swingApp.getJFrame() : null;
 	}
 	
 	private void createMissingNetworkViews(final List<CyNetwork> networks) {
-		DialogTaskManager taskManager = serviceRegistrar.getService(DialogTaskManager.class);
-		CreateNetworkViewTaskFactory createViewTaskFactory =
-				serviceRegistrar.getService(CreateNetworkViewTaskFactory.class);
+		var taskManager = serviceRegistrar.getService(DialogTaskManager.class);
+		var createViewTaskFactory = serviceRegistrar.getService(CreateNetworkViewTaskFactory.class);
 		
 		taskManager.execute(createViewTaskFactory.createTaskIterator(networks));
 	}
 	
 	private void doNetworkMerge() {
 		try {
-			CyAction mergeAction = serviceRegistrar.getService(CyAction.class, "(id=networkMergeAction)");
+			var mergeAction = serviceRegistrar.getService(CyAction.class, "(id=networkMergeAction)");
 			mergeAction.actionPerformed(null);
-		}
-		catch(Throwable t) {
-			JOptionPane.showMessageDialog(getDialogParent(),  "<html>Network merge is currently unavailable.<br>"
+		} catch(Throwable t) {
+			JOptionPane.showMessageDialog(getDialogParent(), "<html>Network merge is currently unavailable.<br>"
 					+ "Make sure Cytoscape has finished starting up and try again.</html>", "Network Merge Unavailable",
 					JOptionPane.ERROR_MESSAGE);
 		}
