@@ -7,17 +7,17 @@
 	<properties>
 		<bundle.symbolicName>org.cytoscape.webservice-psicquic-client</bundle.symbolicName>
 		<bundle.namespace>org.cytoscape.webservice.psicquic</bundle.namespace>
-		<cytoscape.api.version>3.9.0</cytoscape.api.version>
+		<cytoscape.api.version>3.10.0</cytoscape.api.version>
 		<junit.version>4.12</junit.version>
-		<maven-compiler-plugin.version>3.8.0</maven-compiler-plugin.version>
-		<maven-bundle-plugin.version>4.1.0</maven-bundle-plugin.version>
+		<maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+		<maven-bundle-plugin.version>5.1.9</maven-bundle-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M3</maven-surefire-plugin.version>
 		<osgi.api.version>6.0.0</osgi.api.version>
 	</properties>
 
 	<groupId>org.cytoscape</groupId>
 	<artifactId>webservice-psicquic-client</artifactId>
-	<version>3.6.0</version>
+	<version>3.6.1</version>
 	<name>PSICQUIC Web Service Client</name>
 	<packaging>bundle</packaging>
 
@@ -31,12 +31,12 @@
 		<repository>
 			<id>cytoscape_releases</id>
 			<name>Cytoscape Releases</name>
-			<url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_releases/</url>
+			<url>https://nrnb-nexus.ucsd.edu/repository/cytoscape_releases/</url>
 		</repository>
 		<snapshotRepository>
 			<id>cytoscape_snapshots</id>
 			<name>Cytoscape Snapshots</name>
-			<url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_snapshots/</url>
+			<url>https://nrnb-nexus.ucsd.edu/repository/cytoscape_snapshots/</url>
 		</snapshotRepository>
 	</distributionManagement>
 
@@ -50,7 +50,7 @@
 				<enabled>true</enabled>
 			</releases>
 			<name>Cytoscape Releases</name>
-			<url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_releases/</url>
+			<url>https://nrnb-nexus.ucsd.edu/repository/cytoscape_releases/</url>
 		</repository>
 		<repository>
 			<id>cytoscape_snapshots</id>
@@ -61,7 +61,7 @@
 				<enabled>false</enabled>
 			</releases>
 			<name>Cytoscape Snapshots</name>
-			<url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_snapshots/</url>
+			<url>https://nrnb-nexus.ucsd.edu/repository/cytoscape_snapshots/</url>
 		</repository>
 		<repository>
 			<id>cytoscape_thirdparty</id>
@@ -72,7 +72,7 @@
 				<enabled>true</enabled>
 			</releases>
 			<name>Cytoscape Third Party</name>
-			<url>http://nrnb-nexus.ucsd.edu/repository/cytoscape_thirdparty/</url>
+			<url>https://nrnb-nexus.ucsd.edu/repository/cytoscape_thirdparty/</url>
 		</repository>
      <repository>
         <id>psidev</id>
@@ -93,18 +93,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>${maven-compiler-plugin.version}</version>
-				<extensions>true</extensions>
 				<configuration>
-					<source>11</source>
-					<target>11</target>
-					<encoding>UTF-8</encoding>
-					<optimize>true</optimize>
-					<showWarnings>true</showWarnings>
-					<showDeprecation>true</showDeprecation>
-					<compilerArguments>
-						<Xmaxwarns>10000</Xmaxwarns>
-						<Xmaxerrs>10000</Xmaxerrs>
-					</compilerArguments>
+					<release>17</release>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -130,7 +120,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			<!-- 			<plugin>
+			<!-- <plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<version>${maven-jar-plugin.version}</version>
@@ -147,16 +137,29 @@
 				<artifactId>maven-bundle-plugin</artifactId>
 				<version>${maven-bundle-plugin.version}</version>
 				<extensions>true</extensions>
+				<executions>
+					<!-- Lets Eclipse (m2e PDE connector) regenerate the manifest in target/classes on incremental builds -->
+					<execution>
+						<id>bundle-manifest</id>
+						<phase>process-classes</phase>
+						<goals>
+							<goal>manifest</goal>
+						</goals>
+						<configuration>
+							<supportIncrementalBuild>true</supportIncrementalBuild>
+						</configuration>
+					</execution>
+				</executions>
 				<configuration>
 					<instructions>
 						<Bundle-SymbolicName>${bundle.symbolicName}</Bundle-SymbolicName>
 						<Bundle-Version>${project.version}</Bundle-Version>
-            <Export-Package>!${bundle.namespace}.*</Export-Package>
+						<Export-Package>!${bundle.namespace}.*</Export-Package>
 						<Private-Package>${bundle.namespace}.*</Private-Package>
 						<Bundle-Activator>${bundle.namespace}.CyActivator</Bundle-Activator>
-						<Embed-Dependency>psidev.*;scope=!provided|!test</Embed-Dependency>
-            <Embed-Transitive>true</Embed-Transitive>
-            <Import-Package>*;resolution:=optional</Import-Package>
+						<Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
+						<Embed-Transitive>true</Embed-Transitive>
+						<Import-Package>*;resolution:=optional</Import-Package>
 					</instructions>
 				</configuration>
 			</plugin>
@@ -164,6 +167,10 @@
           		<groupId>org.apache.maven.plugins</groupId>
           		<artifactId>maven-surefire-plugin</artifactId>
           		<version>${maven-surefire-plugin.version}</version>
+				<configuration>
+					<!-- NetworkTestSupport (model-impl) generates classes reflectively; required on Java 17+ -->
+					<argLine>--add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+				</configuration>
         	</plugin>
 		</plugins>
 	</build>
@@ -220,25 +227,85 @@
 			<scope>provided</scope>
 		</dependency>
 
-		<!-- MI Cluster dependency -->
+		<!-- MI Cluster dependency (embedded into the bundle together with its transitive dependencies, see Embed-Dependency) -->
 		<dependency>
-      <groupId>uk.ac.ebi.enfin.mi.cluster</groupId>
-      <artifactId>micluster</artifactId>
+			<groupId>uk.ac.ebi.enfin.mi.cluster</groupId>
+			<artifactId>micluster</artifactId>
 			<version>1.7.14</version>
-      <optional>true</optional>
+			<optional>true</optional>
+			<exclusions>
+				<!-- Only published to the defunct SpringSource EBR (http), which Maven 3.8+ blocks -->
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>com.springsource.org.apache.commons.collections</artifactId>
+				</exclusion>
+				<!-- The classifier-less json-lib jar only existed on a dead EBI mirror; re-declared below with the jdk15 classifier -->
+				<exclusion>
+					<groupId>net.sf.json-lib</groupId>
+					<artifactId>json-lib</artifactId>
+				</exclusion>
+				<!-- Provided by Cytoscape's pax-logging; import them instead of embedding a second logging stack -->
+				<exclusion>
+					<groupId>log4j</groupId>
+					<artifactId>log4j</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
-    <dependency>
-        <groupId>psidev.psi.mi</groupId>
-        <artifactId>psi25-xml</artifactId>
-        <version>1.8.6</version>
-        <optional>true</optional>
-    </dependency>
-    <dependency>
-        <groupId>psidev.psi.mi</groupId>
-        <artifactId>psimitab</artifactId>
-        <version>1.8.6</version>
-        <optional>true</optional>
-    </dependency>
+		<dependency>
+			<groupId>psidev.psi.mi</groupId>
+			<artifactId>psi25-xml</artifactId>
+			<version>1.8.6</version>
+			<optional>true</optional>
+			<exclusions>
+				<!-- Only published to the defunct SpringSource EBR (http), which Maven 3.8+ blocks -->
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>com.springsource.org.apache.commons.collections</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>psidev.psi.mi</groupId>
+			<artifactId>psimitab</artifactId>
+			<version>1.8.6</version>
+			<optional>true</optional>
+			<exclusions>
+				<!-- SpringSource EBR repackagings: collections is unresolvable (http-only repo), lang duplicates commons-lang below -->
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>com.springsource.org.apache.commons.collections</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.commons</groupId>
+					<artifactId>com.springsource.org.apache.commons.lang</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- Plain commons-lang, replacing the SpringSource repackaging psimitab asks for -->
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.4</version>
+			<optional>true</optional>
+		</dependency>
+		<!-- Needed by miscore (transitive of micluster); Maven Central only has the jdk15-classified jar -->
+		<dependency>
+			<groupId>net.sf.json-lib</groupId>
+			<artifactId>json-lib</artifactId>
+			<version>2.2.3</version>
+			<classifier>jdk15</classifier>
+			<optional>true</optional>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 
 		<!-- Testing -->
 		<dependency>
@@ -257,6 +324,19 @@
 			<groupId>org.cytoscape</groupId>
 			<artifactId>model-impl</artifactId>
 			<version>${cytoscape.api.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- Stand-ins for the logging packages pax-logging exports inside Cytoscape (excluded from micluster above) -->
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.2</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
